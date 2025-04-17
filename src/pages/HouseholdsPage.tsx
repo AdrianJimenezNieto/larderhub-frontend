@@ -6,28 +6,31 @@ import type { Household, CreateHouseholdRequest, JoinHouseholdRequest } from '..
 import CreateHouseholdModal from '../features/households/components/CreateHouseholdModal';
 import JoinHouseholdModal from '../features/households/components/JoinHouseholdModal';
 import HouseholdMembersModal from '../features/households/components/HouseholdMembersModal';
+import ConfirmModal from '../components/ui/ConfirmModal';
 
 type ModalType = 'create' | 'join' | null;
 
+const CheckIcon = () => (
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M4 12l6 6L20 6"/>
+  </svg>
+);
+
 const HouseholdsPage = () => {
   const navigate = useNavigate();
-  const { households, activeHouseholdId, setHouseholds, addHousehold, setActiveHousehold } =
-    useHouseholdStore();
+  const { households, activeHouseholdId, setHouseholds, addHousehold, setActiveHousehold, removeHousehold } = useHouseholdStore();
 
   const [loading, setLoading] = useState(true);
   const [fetchError, setFetchError] = useState<string | null>(null);
   const [modal, setModal] = useState<ModalType>(null);
   const [membersHousehold, setMembersHousehold] = useState<Household | null>(null);
+  const [dissolveTarget, setDissolveTarget] = useState<Household | null>(null);
+  const [dissolving, setDissolving] = useState(false);
 
-  // Load all user households on mount
   useEffect(() => {
-    householdService
-      .getMyHouseholds()
-      .then((data) => {
-        setHouseholds(data);
-        setFetchError(null);
-      })
-      .catch(() => setFetchError('No se pudieron cargar tus hogares. Inténtalo de nuevo.'))
+    householdService.getMyHouseholds()
+      .then(data => { setHouseholds(data); setFetchError(null); })
+      .catch(() => setFetchError('No se pudieron cargar tus hogares.'))
       .finally(() => setLoading(false));
   }, [setHouseholds]);
 
@@ -43,150 +46,179 @@ const HouseholdsPage = () => {
     setActiveHousehold(joined.id);
   };
 
-  const handleSelectHousehold = (id: number) => {
+  const handleSelect = (id: number) => {
     setActiveHousehold(id);
     navigate('/dashboard');
   };
 
-  const formatDate = (str: string) =>
-    new Date(str).toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' });
+  const handleDissolve = async (householdId: number) => {
+    setDissolving(true);
+    try {
+      await householdService.deleteHousehold(householdId);
+      removeHousehold(householdId);
+      if (activeHouseholdId === householdId) navigate('/households');
+    } catch {
+      // error is visible via the fetchError or a future toast; store is untouched
+    } finally {
+      setDissolving(false);
+    }
+  };
 
   return (
-    <div className="min-h-screen bg-surface-50">
-      {/* Header */}
-      <header className="bg-white border-b border-surface-200 px-4 py-3 flex items-center justify-between">
-        <h1 className="text-xl text-brand-600">LarderHub</h1>
-        <button
-          onClick={() => navigate('/dashboard')}
-          className="text-sm font-semibold font-body text-surface-500 border border-surface-300 rounded-lg px-3 hover:bg-surface-100 transition-colors"
-        >
-          ← Volver al dashboard
-        </button>
-      </header>
+    <div style={{ height: '100%', overflowY: 'auto', scrollbarWidth: 'none', background: 'var(--paper)' }}>
 
-      <main className="max-w-2xl mx-auto px-4 py-6 flex flex-col gap-6">
-        {/* Title + actions */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          <div>
-            <h2 className="text-2xl text-surface-900">Mis hogares</h2>
-            <p className="text-sm text-surface-400 font-body mt-0.5">
-              Grupos colaborativos con despensa compartida
-            </p>
-          </div>
-          <div className="flex gap-2">
-            <button
-              id="join-household-button"
-              onClick={() => setModal('join')}
-              className="border border-action-500 text-action-500 font-semibold font-body rounded-lg px-4 hover:bg-action-50 transition-colors text-sm"
-            >
-              Unirse con código
-            </button>
+      {/* Header */}
+      <div style={{ padding: '20px 20px 0' }}>
+        <div className="micro" style={{ marginBottom: 6 }}>
+          {households.length} {households.length === 1 ? 'hogar' : 'hogares'}
+        </div>
+        <h1 className="h-xl" style={{ fontSize: 46 }}>Tus <em>hogares</em>.</h1>
+      </div>
+
+      {/* Error */}
+      {fetchError && !loading && (
+        <div style={{ margin: '16px 20px 0', padding: '10px 14px', background: 'var(--red-soft)', borderRadius: 'var(--r-m)', color: 'var(--red)', fontSize: 13 }}>
+          {fetchError}
+        </div>
+      )}
+
+      {/* Loading */}
+      {loading && (
+        <div style={{ padding: '40px 24px', textAlign: 'center' }}>
+          <div className="body-s">Cargando hogares…</div>
+        </div>
+      )}
+
+      {/* Household list */}
+      {!loading && (
+        <div style={{ padding: '20px 20px 0' }}>
+          {households.map(h => {
+            const isActive = h.id === activeHouseholdId;
+            return (
+              <div
+                key={h.id}
+                className="card"
+                style={{
+                  marginBottom: 12, padding: 16,
+                  borderLeft: isActive ? '3px solid var(--accent)' : undefined,
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 10, marginBottom: 12 }}>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <div className="h-s" style={{ fontSize: 16 }}>{h.name}</div>
+                      {isActive && (
+                        <span className="chip chip-fresh" style={{ height: 20, padding: '0 8px', fontSize: 10 }}>
+                          <span className="dot" style={{ width: 5, height: 5 }} />
+                          Activo
+                        </span>
+                      )}
+                    </div>
+                    <div className="mono" style={{ fontSize: 11, color: 'var(--muted)', marginTop: 2 }}>
+                      {h.myRole === 'ADMIN' ? 'Admin' : 'Miembro'}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Join code */}
+                <div style={{
+                  background: 'var(--paper-2)', borderRadius: 'var(--r-m)',
+                  padding: '8px 12px', marginBottom: 12,
+                  display: 'flex', alignItems: 'center', gap: 8,
+                }}>
+                  <span className="micro">Código de invitación</span>
+                  <span className="mono" style={{ fontSize: 15, fontWeight: 600, letterSpacing: '0.1em', flex: 1, userSelect: 'all' }}>
+                    {h.joinCode}
+                  </span>
+                </div>
+
+                {/* Actions */}
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <button
+                    id={`select-household-${h.id}`}
+                    onClick={() => handleSelect(h.id)}
+                    disabled={isActive}
+                    className="btn btn-sm"
+                    style={{
+                      flex: 1,
+                      background: isActive ? 'var(--accent)' : 'var(--ink)',
+                      color: 'var(--paper)',
+                      opacity: isActive ? 0.7 : 1,
+                      display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+                    }}
+                  >
+                    {isActive ? <><CheckIcon /> Activo</> : 'Seleccionar'}
+                  </button>
+                  <button
+                    id={`view-members-${h.id}`}
+                    onClick={() => setMembersHousehold(h)}
+                    className="btn btn-sm btn-soft"
+                    style={{ flex: 1 }}
+                  >
+                    Miembros
+                  </button>
+                  {h.myRole === 'ADMIN' && (
+                    <button
+                      id={`dissolve-household-${h.id}`}
+                      onClick={() => setDissolveTarget(h)}
+                      disabled={dissolving}
+                      className="btn btn-sm btn-ghost"
+                      style={{ color: 'var(--red)', borderColor: 'var(--red)', opacity: 0.8 }}
+                    >
+                      Disolver
+                    </button>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+
+          {/* Empty state */}
+          {!loading && !fetchError && households.length === 0 && (
+            <div style={{ padding: '40px 20px', textAlign: 'center' }}>
+              <div className="placeholder" style={{ width: 80, height: 80, borderRadius: 16, margin: '0 auto 16px' }}>
+                <span>hogar</span>
+              </div>
+              <div className="h-s">Sin hogares</div>
+              <div className="body-s" style={{ marginTop: 4 }}>Crea uno nuevo o únete con un código de invitación.</div>
+            </div>
+          )}
+
+          {/* Create / Join cards */}
+          <div style={{ display: 'flex', gap: 10, marginBottom: 120 }}>
             <button
               id="create-household-button"
               onClick={() => setModal('create')}
-              className="bg-brand-600 text-white font-semibold font-body rounded-lg px-4 hover:bg-brand-700 transition-colors text-sm flex items-center gap-1"
+              style={{
+                flex: 1, padding: 16, borderRadius: 'var(--r-l)',
+                border: '1.5px dashed var(--line)', background: 'none',
+                cursor: 'pointer', textAlign: 'left', color: 'var(--ink)',
+                display: 'flex', flexDirection: 'column', gap: 4,
+              }}
             >
-              <span className="text-lg leading-none">+</span> Crear hogar
+              <div className="h-s" style={{ fontSize: 15 }}>+ Crear hogar</div>
+              <div className="body-s" style={{ color: 'var(--muted)' }}>Nuevo grupo compartido</div>
+            </button>
+            <button
+              id="join-household-button"
+              onClick={() => setModal('join')}
+              style={{
+                flex: 1, padding: 16, borderRadius: 'var(--r-l)',
+                border: '1.5px dashed var(--line)', background: 'none',
+                cursor: 'pointer', textAlign: 'left', color: 'var(--ink)',
+                display: 'flex', flexDirection: 'column', gap: 4,
+              }}
+            >
+              <div className="h-s" style={{ fontSize: 15 }}>Unirse</div>
+              <div className="body-s" style={{ color: 'var(--muted)' }}>Con código de invitación</div>
             </button>
           </div>
         </div>
-
-        {/* Loading */}
-        {loading && (
-          <p className="text-center text-surface-400 font-body py-12">Cargando hogares…</p>
-        )}
-
-        {/* Fetch error */}
-        {fetchError && !loading && (
-          <div role="alert" className="text-sm text-alert-600 bg-alert-50 border border-alert-200 rounded-lg px-4 py-3 font-body">
-            {fetchError}
-          </div>
-        )}
-
-        {/* Empty state */}
-        {!loading && !fetchError && households.length === 0 && (
-          <div className="flex flex-col items-center justify-center gap-4 py-16 text-center">
-            <span className="text-6xl">🏠</span>
-            <p className="text-surface-500 font-body">
-              Todavía no perteneces a ningún hogar. Crea uno nuevo o únete con un código.
-            </p>
-          </div>
-        )}
-
-        {/* Household list */}
-        {!loading && !fetchError && households.length > 0 && (
-          <ul className="flex flex-col gap-4">
-            {households.map((h) => {
-              const isActive = h.id === activeHouseholdId;
-              return (
-                <li
-                  key={h.id}
-                  className={`bg-white rounded-xl border-2 p-4 flex flex-col gap-3 shadow-card transition-shadow ${isActive ? 'border-brand-600' : 'border-surface-200'
-                    }`}
-                >
-                  {/* Household header */}
-                  <div className="flex items-start justify-between gap-2">
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <h3 className="font-semibold text-surface-900 font-body">{h.name}</h3>
-                        {isActive && (
-                          <span className="text-xs font-semibold bg-brand-100 text-brand-700 px-2 py-0.5 rounded-full">
-                            Activo
-                          </span>
-                        )}
-                      </div>
-                      <p className="text-xs text-surface-400 font-body mt-0.5">
-                        Creado el {formatDate(h.createdAt)}
-                      </p>
-                    </div>
-                    <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${h.myRole === 'ADMIN'
-                      ? 'bg-brand-100 text-brand-700'
-                      : 'bg-surface-200 text-surface-600'
-                      }`}>
-                      {h.myRole === 'ADMIN' ? 'Admin' : 'Miembro'}
-                    </span>
-                  </div>
-
-                  {/* Join code */}
-                  <div className="flex items-center gap-2 bg-surface-50 rounded-lg px-3 py-2">
-                    <span className="text-xs text-surface-400 font-body">Código de invitación:</span>
-                    <code className="text-sm font-semibold text-surface-700 tracking-widest select-all">
-                      {h.joinCode}
-                    </code>
-                  </div>
-
-                  {/* Actions */}
-                  <div className="flex gap-2">
-                    <button
-                      id={`select-household-${h.id}`}
-                      onClick={() => handleSelectHousehold(h.id)}
-                      disabled={isActive}
-                      className="flex-1 text-sm font-semibold font-body bg-brand-600 text-white rounded-lg hover:bg-brand-700 disabled:opacity-40 transition-colors"
-                    >
-                      {isActive ? 'Hogar activo' : 'Seleccionar'}
-                    </button>
-                    <button
-                      id={`view-members-${h.id}`}
-                      onClick={() => setMembersHousehold(h)}
-                      className="flex-1 text-sm font-semibold font-body border border-surface-300 text-surface-600 rounded-lg hover:bg-surface-100 transition-colors"
-                    >
-                      Ver miembros
-                    </button>
-                  </div>
-                </li>
-              );
-            })}
-          </ul>
-        )}
-      </main>
+      )}
 
       {/* Modals */}
-      {modal === 'create' && (
-        <CreateHouseholdModal onSave={handleCreate} onClose={() => setModal(null)} />
-      )}
-      {modal === 'join' && (
-        <JoinHouseholdModal onSave={handleJoin} onClose={() => setModal(null)} />
-      )}
+      {modal === 'create' && <CreateHouseholdModal onSave={handleCreate} onClose={() => setModal(null)} />}
+      {modal === 'join' && <JoinHouseholdModal onSave={handleJoin} onClose={() => setModal(null)} />}
       {membersHousehold && (
         <HouseholdMembersModal
           householdId={membersHousehold.id}
@@ -195,6 +227,16 @@ const HouseholdsPage = () => {
           onClose={() => setMembersHousehold(null)}
         />
       )}
+      <ConfirmModal
+        isOpen={!!dissolveTarget}
+        title="Disolver hogar"
+        message={`¿Seguro que quieres disolver "${dissolveTarget?.name}"? Se eliminarán todos los miembros, el inventario y la lista de la compra. Esta acción no se puede deshacer.`}
+        confirmText="Disolver"
+        cancelText="Cancelar"
+        isDestructive
+        onConfirm={() => dissolveTarget && handleDissolve(dissolveTarget.id)}
+        onCancel={() => setDissolveTarget(null)}
+      />
     </div>
   );
 };

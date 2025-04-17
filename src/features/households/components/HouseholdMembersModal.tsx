@@ -3,6 +3,7 @@ import { Trash2, UserPlus, Search, Loader2 } from 'lucide-react';
 import { useAuthStore } from '../../../store/authStore';
 import useMemberManagement from '../useMemberManagement';
 import type { HouseholdRole } from '../../../types/household';
+import UserAvatar from '../../../components/UserAvatar';
 
 interface HouseholdMembersModalProps {
   householdId: number;
@@ -10,16 +11,6 @@ interface HouseholdMembersModalProps {
   myRole: HouseholdRole;
   onClose: () => void;
 }
-
-// Avatar with initials
-const Avatar = ({ username }: { username: string }) => {
-  const initials = username.slice(0, 2).toUpperCase();
-  return (
-    <div className="w-9 h-9 rounded-full bg-brand-600 flex items-center justify-center shrink-0">
-      <span className="text-white font-semibold text-xs font-body">{initials}</span>
-    </div>
-  );
-};
 
 // Format ISO datetime to DD/MM/YYYY
 const formatDate = (str: string) =>
@@ -55,6 +46,7 @@ const HouseholdMembersModal = ({
     triggerSearch,
     inviteMember,
     removeMember,
+    changeRole,
   } = useMemberManagement(householdId);
 
   // Invite state
@@ -65,6 +57,11 @@ const HouseholdMembersModal = ({
   // Remove confirm state
   const [removingId, setRemovingId] = useState<number | null>(null);
   const [confirmRemoveId, setConfirmRemoveId] = useState<number | null>(null);
+
+  // Role change state
+  const [changingRoleId, setChangingRoleId] = useState<number | null>(null);
+  const [confirmRoleUserId, setConfirmRoleUserId] = useState<number | null>(null);
+  const [roleError, setRoleError] = useState<string | null>(null);
 
   const searchInputRef = useRef<HTMLInputElement>(null);
 
@@ -99,6 +96,21 @@ const HouseholdMembersModal = ({
       console.error('Remove member error', status);
     } finally {
       setRemovingId(null);
+    }
+  };
+
+  const handleChangeRole = async (userId: number, newRole: 'ADMIN' | 'MEMBER') => {
+    setChangingRoleId(userId);
+    setConfirmRoleUserId(null);
+    setRoleError(null);
+    try {
+      await changeRole(userId, newRole);
+    } catch (err: unknown) {
+      const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
+      setRoleError(msg ?? 'No se pudo cambiar el rol.');
+      setTimeout(() => setRoleError(null), 4000);
+    } finally {
+      setChangingRoleId(null);
     }
   };
 
@@ -172,7 +184,7 @@ const HouseholdMembersModal = ({
                 <ul className="flex flex-col gap-2">
                   {searchResults.map((result) => (
                     <li key={result.id} className="flex items-center gap-3 bg-surface-50 rounded-lg px-4 py-3 border border-surface-200">
-                      <Avatar username={result.username} />
+                      <UserAvatar name={result.username} avatarUrl={result.avatarUrl} />
                       <div className="flex-1 min-w-0">
                         <p className="font-semibold text-surface-900 font-body text-sm truncate">
                           {result.username}
@@ -240,12 +252,17 @@ const HouseholdMembersModal = ({
                   const isConfirming = confirmRemoveId === member.userId;
                   const isRemoving = removingId === member.userId;
 
+                  const isConfirmingRole = confirmRoleUserId === member.userId;
+                  const isChangingRole = changingRoleId === member.userId;
+                  const newRole = member.role === 'ADMIN' ? 'MEMBER' : 'ADMIN';
+                  const roleLabel = member.role === 'ADMIN' ? 'Quitar Admin' : 'Hacer Admin';
+
                   return (
                     <li
                       key={member.userId}
                       className="flex items-center gap-3 rounded-lg px-3 py-2.5 hover:bg-surface-50 transition-colors"
                     >
-                      <Avatar username={member.username} />
+                      <UserAvatar name={member.username} avatarUrl={member.avatarUrl} />
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-1.5">
                           <p className="font-semibold text-surface-900 font-body text-sm truncate">
@@ -261,6 +278,38 @@ const HouseholdMembersModal = ({
                       </div>
 
                       <RoleBadge role={member.role} />
+
+                      {/* Role toggle — ADMIN only, for all members (self-demotion allowed if other ADMINs exist) */}
+                      {isAdmin && (
+                        isConfirmingRole ? (
+                          <div className="flex items-center gap-1.5 shrink-0">
+                            <button
+                              id={`confirm-role-${member.userId}`}
+                              onClick={() => handleChangeRole(member.userId, newRole)}
+                              disabled={isChangingRole}
+                              className="text-xs font-semibold font-body bg-brand-600 text-white rounded-lg px-2.5 py-1 hover:bg-brand-700 disabled:opacity-50 transition-colors"
+                            >
+                              {isChangingRole ? '…' : 'Confirmar'}
+                            </button>
+                            <button
+                              onClick={() => setConfirmRoleUserId(null)}
+                              className="text-xs font-semibold font-body border border-surface-300 text-surface-600 rounded-lg px-2.5 py-1 hover:bg-surface-100 transition-colors"
+                            >
+                              Cancelar
+                            </button>
+                          </div>
+                        ) : (
+                          <button
+                            id={`change-role-${member.userId}`}
+                            onClick={() => { setConfirmRemoveId(null); setConfirmRoleUserId(member.userId); }}
+                            disabled={isChangingRole}
+                            className="shrink-0 text-xs font-semibold font-body border border-surface-200 text-surface-500 rounded-lg px-2 py-1 hover:border-brand-400 hover:text-brand-600 disabled:opacity-50 transition-colors"
+                            aria-label={`${roleLabel} a ${member.username}`}
+                          >
+                            {roleLabel}
+                          </button>
+                        )
+                      )}
 
                       {/* Remove button — only ADMIN, only on other members */}
                       {isAdmin && !isSelf && (
@@ -284,7 +333,7 @@ const HouseholdMembersModal = ({
                         ) : (
                           <button
                             id={`remove-member-${member.userId}`}
-                            onClick={() => setConfirmRemoveId(member.userId)}
+                            onClick={() => { setConfirmRoleUserId(null); setConfirmRemoveId(member.userId); }}
                             disabled={isRemoving}
                             className="shrink-0 w-8 h-8 flex items-center justify-center text-surface-300 hover:text-alert-600 hover:bg-alert-50 rounded-lg transition-colors"
                             aria-label={`Expulsar a ${member.username}`}
@@ -302,7 +351,10 @@ const HouseholdMembersModal = ({
         </div>
 
         {/* Footer */}
-        <div className="px-6 py-4 border-t border-surface-100 shrink-0">
+        <div className="px-6 py-4 border-t border-surface-100 shrink-0 flex flex-col gap-2">
+          {roleError && (
+            <p className="text-xs text-alert-600 font-body text-center">{roleError}</p>
+          )}
           <button
             id="members-modal-close"
             onClick={onClose}

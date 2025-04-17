@@ -6,16 +6,15 @@ interface UseMemberManagementReturn {
   members: HouseholdMember[];
   loading: boolean;
   error: string | null;
-  // Search
   searchQuery: string;
   setSearchQuery: (q: string) => void;
   searchResults: UserSearchResult[];
   searching: boolean;
   searchError: string | null;
   triggerSearch: () => void;
-  // Actions
   inviteMember: (query: string) => Promise<HouseholdMember>;
   removeMember: (memberId: number) => Promise<void>;
+  changeRole: (userId: number, newRole: 'ADMIN' | 'MEMBER') => Promise<void>;
   refetch: () => Promise<void>;
 }
 
@@ -24,16 +23,14 @@ const useMemberManagement = (householdId: number | null): UseMemberManagementRet
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Search state
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<UserSearchResult[]>([]);
   const [searching, setSearching] = useState(false);
   const [searchError, setSearchError] = useState<string | null>(null);
 
-  // Debounce ref — timer for clearing previous search
+  // ref para el debounce de búsqueda
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Fetch members list
   const fetchMembers = useCallback(async () => {
     if (!householdId) return;
     setLoading(true);
@@ -50,7 +47,7 @@ const useMemberManagement = (householdId: number | null): UseMemberManagementRet
 
   useEffect(() => { void fetchMembers(); }, [fetchMembers]);
 
-  // Debounced search — fires 400ms after the last keystroke
+  // búsqueda con debounce de 400ms
   useEffect(() => {
     if (!searchQuery.trim()) {
       setSearchResults([]);
@@ -68,14 +65,12 @@ const useMemberManagement = (householdId: number | null): UseMemberManagementRet
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchQuery, householdId]);
 
-  // Manual trigger (also used by the debounce)
   const runSearch = async (q: string) => {
     if (!householdId || !q) return;
     setSearching(true);
     setSearchError(null);
     setSearchResults([]);
     try {
-      // API returns an array — empty array means no matches
       const results = await service.searchUser(householdId, q);
       setSearchResults(results);
       if (results.length === 0) setSearchError('No se encontraron usuarios con ese nombre o email.');
@@ -96,7 +91,6 @@ const useMemberManagement = (householdId: number | null): UseMemberManagementRet
     void runSearch(searchQuery.trim());
   };
 
-  // --- INVITE ---
   const inviteMember = async (query: string): Promise<HouseholdMember> => {
     if (!householdId) throw new Error('No household selected.');
     const newMember = await service.inviteMember(householdId, { query });
@@ -106,13 +100,26 @@ const useMemberManagement = (householdId: number | null): UseMemberManagementRet
     return newMember;
   };
 
-  // --- REMOVE (optimistic) ---
   const removeMember = async (memberId: number): Promise<void> => {
     if (!householdId) return;
     const previous = members;
     setMembers((prev) => prev.filter((m) => m.userId !== memberId));
     try {
       await service.removeMember(householdId, memberId);
+    } catch (err) {
+      setMembers(previous);
+      throw err;
+    }
+  };
+
+  const changeRole = async (userId: number, newRole: 'ADMIN' | 'MEMBER'): Promise<void> => {
+    if (!householdId) return;
+    const previous = members;
+    setMembers((prev) =>
+      prev.map((m) => (m.userId === userId ? { ...m, role: newRole } : m))
+    );
+    try {
+      await service.changeRole(householdId, userId, newRole);
     } catch (err) {
       setMembers(previous);
       throw err;
@@ -131,6 +138,7 @@ const useMemberManagement = (householdId: number | null): UseMemberManagementRet
     triggerSearch,
     inviteMember,
     removeMember,
+    changeRole,
     refetch: fetchMembers,
   };
 };
