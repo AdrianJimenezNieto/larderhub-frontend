@@ -3,16 +3,18 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../store/authStore';
 import { register as registerService } from '../../features/auth/authService';
 
+const BackIcon = () => (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+    strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M15 18l-6-6 6-6"/>
+  </svg>
+);
+
 const RegisterPage = () => {
   const navigate = useNavigate();
   const loginStore = useAuthStore((s) => s.login);
 
-  const [form, setForm] = useState({
-    name: '',
-    email: '',
-    password: '',
-    confirmPassword: '',
-  });
+  const [form, setForm] = useState({ name: '', email: '', password: '', confirmPassword: '' });
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -24,18 +26,8 @@ const RegisterPage = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
-
-    // Local validation: password match
-    if (form.password !== form.confirmPassword) {
-      setError('Las contraseñas no coinciden.');
-      return;
-    }
-
-    if (form.password.length < 8) {
-      setError('La contraseña debe tener al menos 8 caracteres.');
-      return;
-    }
-
+    if (form.password !== form.confirmPassword) { setError('Las contraseñas no coinciden.'); return; }
+    if (form.password.length < 8) { setError('La contraseña debe tener al menos 8 caracteres.'); return; }
     setLoading(true);
     try {
       const { name, email, password } = form;
@@ -55,118 +47,84 @@ const RegisterPage = () => {
   };
 
   return (
-    <main className="min-h-screen bg-surface-50 flex flex-col items-center justify-center p-6">
-      <div className="w-full max-w-sm bg-white rounded-xl shadow-card p-8 flex flex-col gap-6">
-        {/* Header */}
-        <div className="text-center">
-          <h1 className="text-3xl text-brand-600 mb-1">LarderHub</h1>
-          <h2 className="text-xl text-surface-700">Crear cuenta</h2>
-        </div>
+    <div className="screen entering" style={{ background: 'var(--paper)', color: 'var(--ink)' }}>
+      <form id="reg-form" onSubmit={handleSubmit} noValidate
+        style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
+        <div className="screen-scroll" style={{ display: 'flex', flexDirection: 'column' }}>
 
-        {/* Error banner */}
-        {error && (
-          <div
-            role="alert"
-            className="bg-alert-50 border border-alert-300 text-alert-600 text-sm rounded-lg px-4 py-3 font-body"
-          >
-            {error}
-          </div>
-        )}
-
-        {/* Form */}
-        <form onSubmit={handleSubmit} className="flex flex-col gap-4" noValidate>
-          {/* Name */}
-          <div className="flex flex-col gap-1">
-            <label htmlFor="register-name" className="text-sm font-semibold text-surface-700 font-body">
-              Nombre
-            </label>
-            <input
-              id="register-name"
-              type="text"
-              name="name"
-              autoComplete="given-name"
-              required
-              value={form.name}
-              onChange={handleChange}
-              placeholder="Tu nombre"
-              className="border border-surface-300 rounded-lg px-4 py-2 text-surface-900 font-body focus:outline-none focus:ring-2 focus:ring-brand-500 transition"
-            />
+          {/* Back button */}
+          <div style={{ padding: '16px 20px' }}>
+            <Link to="/" className="btn btn-icon btn-soft"><BackIcon /></Link>
           </div>
 
-          {/* Email */}
-          <div className="flex flex-col gap-1">
-            <label htmlFor="register-email" className="text-sm font-semibold text-surface-700 font-body">
-              Email
-            </label>
-            <input
-              id="register-email"
-              type="email"
-              name="email"
-              autoComplete="email"
-              required
-              value={form.email}
-              onChange={handleChange}
-              placeholder="tu@email.com"
-              className="border border-surface-300 rounded-lg px-4 py-2 text-surface-900 font-body focus:outline-none focus:ring-2 focus:ring-brand-500 transition"
-            />
+          {/* Heading */}
+          <div style={{ padding: '16px 24px 8px' }}>
+            <div className="label" style={{ marginBottom: 12 }}>Crea tu cuenta · 01/03</div>
+            <h1 className="h-xl">Un lugar<br /><em>para cocinar</em><br />juntos.</h1>
           </div>
 
-          {/* Password */}
-          <div className="flex flex-col gap-1">
-            <label htmlFor="register-password" className="text-sm font-semibold text-surface-700 font-body">
-              Contraseña
-            </label>
-            <input
-              id="register-password"
-              type="password"
-              name="password"
-              autoComplete="new-password"
-              required
-              value={form.password}
-              onChange={handleChange}
-              placeholder="Mín. 8 caracteres"
-              className="border border-surface-300 rounded-lg px-4 py-2 text-surface-900 font-body focus:outline-none focus:ring-2 focus:ring-brand-500 transition"
-            />
+          {/* Fields */}
+          <div style={{ padding: '28px 20px', display: 'flex', flexDirection: 'column', gap: 14 }}>
+            {error && (
+              <div role="alert" style={{
+                background: 'var(--red-soft)', color: 'var(--red)',
+                borderRadius: 'var(--r-m)', padding: '12px 14px',
+                fontSize: 13, fontFamily: 'var(--sans)'
+              }}>
+                {error}
+              </div>
+            )}
+
+            <div className="col gap-6">
+              <label className="micro" htmlFor="reg-name">Nombre</label>
+              <input id="reg-name" className="input" type="text" name="name"
+                autoComplete="given-name" required
+                value={form.name} onChange={handleChange} placeholder="Tu nombre" />
+            </div>
+
+            <div className="col gap-6">
+              <label className="micro" htmlFor="reg-email">Correo</label>
+              <input id="reg-email" className="input" type="email" name="email"
+                autoComplete="email" required
+                value={form.email} onChange={handleChange} placeholder="tu@email.com" />
+            </div>
+
+            <div className="col gap-6">
+              <label className="micro" htmlFor="reg-password">Contraseña</label>
+              <input id="reg-password" className="input" type="password" name="password"
+                autoComplete="new-password" required
+                value={form.password} onChange={handleChange} placeholder="Mín. 8 caracteres" />
+            </div>
+
+            <div className="col gap-6">
+              <label className="micro" htmlFor="reg-confirm">Confirmar contraseña</label>
+              <input id="reg-confirm" className="input" type="password" name="confirmPassword"
+                autoComplete="new-password" required
+                value={form.confirmPassword} onChange={handleChange} placeholder="Repite tu contraseña" />
+            </div>
+
+            <p className="body-s" style={{ marginTop: 4 }}>
+              Al continuar aceptas los <u>términos</u> y la <u>política de privacidad</u>.
+            </p>
           </div>
 
-          {/* Confirm password */}
-          <div className="flex flex-col gap-1">
-            <label htmlFor="register-confirm" className="text-sm font-semibold text-surface-700 font-body">
-              Confirmar contraseña
-            </label>
-            <input
-              id="register-confirm"
-              type="password"
-              name="confirmPassword"
-              autoComplete="new-password"
-              required
-              value={form.confirmPassword}
-              onChange={handleChange}
-              placeholder="Repite tu contraseña"
-              className="border border-surface-300 rounded-lg px-4 py-2 text-surface-900 font-body focus:outline-none focus:ring-2 focus:ring-brand-500 transition"
-            />
-          </div>
+          <div style={{ flex: 1 }} />
 
           {/* Submit */}
-          <button
-            id="register-submit"
-            type="submit"
-            disabled={loading}
-            className="bg-action-500 text-white font-body font-semibold rounded-lg px-6 hover:bg-action-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-          >
-            {loading ? 'Creando cuenta…' : 'Crear cuenta'}
-          </button>
-        </form>
-
-        {/* Link to login */}
-        <p className="text-center text-sm text-surface-500 font-body">
-          ¿Ya tienes cuenta?{' '}
-          <Link to="/login" className="text-brand-600 font-semibold hover:underline">
-            Inicia sesión
-          </Link>
-        </p>
-      </div>
-    </main>
+          <div style={{ padding: '20px 20px 48px', display: 'flex', flexDirection: 'column', gap: 10 }}>
+            <button type="submit" className="btn btn-primary" disabled={loading} style={{ width: '100%' }}>
+              {loading ? 'Creando cuenta…' : 'Crear cuenta'}
+            </button>
+            <p style={{ textAlign: 'center', fontSize: 13, color: 'var(--muted)', fontFamily: 'var(--sans)', margin: 0 }}>
+              ¿Ya tienes cuenta?{' '}
+              <Link to="/login" style={{ color: 'var(--ink)', fontWeight: 600, textDecoration: 'underline' }}>
+                Inicia sesión
+              </Link>
+            </p>
+          </div>
+        </div>
+      </form>
+    </div>
   );
 };
 

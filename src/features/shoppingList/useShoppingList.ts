@@ -15,7 +15,6 @@ interface UseShoppingListReturn {
   refetch: () => Promise<void>;
 }
 
-// householdId: null disables all fetching
 const useShoppingList = (householdId: number | null): UseShoppingListReturn => {
   const [items, setItems] = useState<ShoppingItem[]>([]);
   const [loading, setLoading] = useState(false);
@@ -37,14 +36,14 @@ const useShoppingList = (householdId: number | null): UseShoppingListReturn => {
 
   useEffect(() => { void fetchItems(); }, [fetchItems]);
 
-  // --- ADD (append server response to avoid temp IDs) ---
+  // añadir: usamos la respuesta del server para tener el ID real
   const addItem = async (data: CreateShoppingItemRequest): Promise<void> => {
     if (!householdId) return;
     const created = await service.addShoppingItem(householdId, data);
     setItems((prev) => [created, ...prev]);
   };
 
-  // --- CHECK (optimistic: toggle locally, sync with server) ---
+  // marcar comprado: update optimista
   const checkItem = async (itemId: number): Promise<ShoppingItem> => {
     if (!householdId) throw new Error('No household selected.');
     const previous = items;
@@ -61,7 +60,6 @@ const useShoppingList = (householdId: number | null): UseShoppingListReturn => {
     }
   };
 
-  // --- DELETE (optimistic) ---
   const deleteItem = async (itemId: number): Promise<void> => {
     if (!householdId) return;
     const previous = items;
@@ -74,13 +72,13 @@ const useShoppingList = (householdId: number | null): UseShoppingListReturn => {
     }
   };
 
-  // --- GENERATE — appends new items returned by backend ---
+  // genera lista desde stock bajo
   const generateFromPantry = async (threshold = 1.0): Promise<ShoppingItem[]> => {
     if (!householdId) return [];
     const newItems = await service.generateFromPantry(householdId, threshold);
     if (newItems.length > 0) {
       setItems((prev) => {
-        // Avoid duplicates: only append items not already in local state
+        // evitamos duplicar items ya en estado local
         const existingIds = new Set(prev.map((i) => i.id));
         const fresh = newItems.filter((i) => !existingIds.has(i.id));
         return [...fresh, ...prev];

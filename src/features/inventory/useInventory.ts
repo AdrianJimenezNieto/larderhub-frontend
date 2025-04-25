@@ -14,14 +14,13 @@ interface UseInventoryReturn {
   refetch: () => Promise<void>;
 }
 
-// Helper: fallback visual para render si la API no está disponible inmediatamente o para UI instantánea
+// helpers para la UI sin esperar a la API
 export const isExpiringSoon = (dateStr: string | null, days = 7): boolean => {
   if (!dateStr) return false;
   const diffDays = (new Date(dateStr).getTime() - Date.now()) / (1000 * 60 * 60 * 24);
   return diffDays >= 0 && diffDays <= days;
 };
 
-// Helper: fallback visual
 export const isExpired = (dateStr: string | null): boolean => {
   if (!dateStr) return false;
   return new Date(dateStr) < new Date();
@@ -45,7 +44,7 @@ const useInventory = (householdId: number | null): UseInventoryReturn => {
     setLoading(true);
     setError(null);
     try {
-      // Cargamos todo en paralelo para alimentar el dashboard y vistas de despensa reales desde backend
+      // cargamos en paralelo: inventario + alertas de caducidad
       const [all, expired, expiring] = await Promise.all([
         inventoryService.getPantryItems(householdId),
         inventoryService.getExpiredItems(householdId),
@@ -68,9 +67,7 @@ const useInventory = (householdId: number | null): UseInventoryReturn => {
   const addItem = async (data: CreatePantryItemRequest): Promise<void> => {
     if (!householdId) return;
     try {
-      // Como el endpoint de backend es idempotente por producto (hace suma de cantidades),
-      // no sabemos si devolverá un item nuevo o uno existente sumado.
-      // Por limpieza y fiabilidad, hacemos la llamada y luego refetch de todo.
+      // el backend suma cantidades si ya existe, así que refrescamos todo
       await inventoryService.createPantryItem(householdId, data);
       await fetchItems();
     } catch {
@@ -80,12 +77,12 @@ const useInventory = (householdId: number | null): UseInventoryReturn => {
 
   const editItem = async (itemId: number, data: UpdatePantryItemRequest): Promise<void> => {
     if (!householdId) return;
-    // Optimistic update para UX rápida en cantidad/fecha
+    // update optimista
     const previous = items;
     setItems((prev) => prev.map((i) => (i.id === itemId ? { ...i, ...data } : i)));
     try {
       await inventoryService.updatePantryItem(householdId, itemId, data);
-      // Las fechas pueden haber cambiado: refrescamos las alertas.
+      // las alertas pueden haber cambiado
       await fetchItems();
     } catch {
       setItems(previous);
@@ -95,7 +92,7 @@ const useInventory = (householdId: number | null): UseInventoryReturn => {
 
   const removeItem = async (itemId: number): Promise<void> => {
     if (!householdId) return;
-    // Optimistic remove general
+    // quitamos de las tres listas
     const previous = items;
     setItems((prev) => prev.filter((i) => i.id !== itemId));
     setExpiredItems((prev) => prev.filter((i) => i.id !== itemId));
@@ -105,7 +102,7 @@ const useInventory = (householdId: number | null): UseInventoryReturn => {
       await inventoryService.deletePantryItem(householdId, itemId);
     } catch {
       setItems(previous);
-      void fetchItems(); // Restaurar estado asumiendo error
+      void fetchItems();
       throw new Error('No se pudo eliminar el producto. Inténtalo de nuevo.');
     }
   };

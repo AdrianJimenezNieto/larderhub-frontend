@@ -15,6 +15,7 @@ export interface HouseholdMember {
   username: string;
   role: HouseholdRole;
   joinedAt: string;
+  avatarUrl?: string | null;
 }
 
 export interface CreateHouseholdRequest {
@@ -31,6 +32,7 @@ export interface UserSearchResult {
   username: string;
   email: string;
   alreadyMember: boolean;
+  avatarUrl?: string | null;
 }
 
 export interface InviteMemberRequest {

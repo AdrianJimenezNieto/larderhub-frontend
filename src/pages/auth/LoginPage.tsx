@@ -3,6 +3,13 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../store/authStore';
 import { login as loginService } from '../../features/auth/authService';
 
+const BackIcon = () => (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+    strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M15 18l-6-6 6-6"/>
+  </svg>
+);
+
 const LoginPage = () => {
   const navigate = useNavigate();
   const loginStore = useAuthStore((s) => s.login);
@@ -37,82 +44,73 @@ const LoginPage = () => {
   };
 
   return (
-    <main className="min-h-screen bg-surface-50 flex flex-col items-center justify-center p-6">
-      <div className="w-full max-w-sm bg-white rounded-xl shadow-card p-8 flex flex-col gap-6">
-        {/* Header */}
-        <div className="text-center">
-          <h1 className="text-3xl text-brand-600 mb-1">LarderHub</h1>
-          <h2 className="text-xl text-surface-700">Iniciar sesión</h2>
+    <div className="screen entering" style={{ background: 'var(--paper)', color: 'var(--ink)' }}>
+      <div className="screen-scroll" style={{ display: 'flex', flexDirection: 'column' }}>
+
+        {/* Back button */}
+        <div style={{ padding: '16px 20px' }}>
+          <Link to="/" className="btn btn-icon btn-soft"><BackIcon /></Link>
         </div>
 
-        {/* Error banner */}
-        {error && (
-          <div
-            role="alert"
-            className="bg-alert-50 border border-alert-300 text-alert-600 text-sm rounded-lg px-4 py-3 font-body"
-          >
-            {error}
-          </div>
-        )}
+        {/* Heading */}
+        <div style={{ padding: '16px 24px 8px' }}>
+          <div className="label" style={{ marginBottom: 12 }}>Iniciar sesión · 01</div>
+          <h1 className="h-xl">Hola de<br /><em>nuevo.</em></h1>
+        </div>
 
         {/* Form */}
-        <form onSubmit={handleSubmit} className="flex flex-col gap-4" noValidate>
-          {/* Email */}
-          <div className="flex flex-col gap-1">
-            <label htmlFor="login-email" className="text-sm font-semibold text-surface-700 font-body">
-              Email
-            </label>
+        <form onSubmit={handleSubmit} style={{ padding: '28px 20px', display: 'flex', flexDirection: 'column', gap: 14 }} noValidate>
+          {error && (
+            <div role="alert" style={{
+              background: 'var(--red-soft)', color: 'var(--red)',
+              borderRadius: 'var(--r-m)', padding: '12px 14px',
+              fontSize: 13, fontFamily: 'var(--sans)'
+            }}>
+              {error}
+            </div>
+          )}
+
+          <div className="col gap-6">
+            <label className="micro" htmlFor="login-email">Correo</label>
             <input
-              id="login-email"
-              type="email"
-              name="email"
-              autoComplete="email"
-              required
-              value={form.email}
-              onChange={handleChange}
+              id="login-email" className="input" type="email" name="email"
+              autoComplete="email" required
+              value={form.email} onChange={handleChange}
               placeholder="tu@email.com"
-              className="border border-surface-300 rounded-lg px-4 py-2 text-surface-900 font-body focus:outline-none focus:ring-2 focus:ring-brand-500 transition"
             />
           </div>
 
-          {/* Password */}
-          <div className="flex flex-col gap-1">
-            <label htmlFor="login-password" className="text-sm font-semibold text-surface-700 font-body">
-              Contraseña
-            </label>
+          <div className="col gap-6">
+            <label className="micro" htmlFor="login-password">Contraseña</label>
             <input
-              id="login-password"
-              type="password"
-              name="password"
-              autoComplete="current-password"
-              required
-              value={form.password}
-              onChange={handleChange}
+              id="login-password" className="input" type="password" name="password"
+              autoComplete="current-password" required
+              value={form.password} onChange={handleChange}
               placeholder="••••••••"
-              className="border border-surface-300 rounded-lg px-4 py-2 text-surface-900 font-body focus:outline-none focus:ring-2 focus:ring-brand-500 transition"
             />
           </div>
 
-          {/* Submit */}
-          <button
-            id="login-submit"
-            type="submit"
-            disabled={loading}
-            className="bg-brand-600 text-white font-body font-semibold rounded-lg px-6 hover:bg-brand-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-          >
-            {loading ? 'Entrando…' : 'Entrar'}
-          </button>
+          <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+            <button type="button" className="btn btn-sm btn-soft">¿Olvidaste la contraseña?</button>
+          </div>
+
+          <div style={{ flex: 1 }} />
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 8 }}>
+            <button type="submit" className="btn btn-primary" disabled={loading} style={{ width: '100%' }}>
+              {loading ? 'Entrando…' : 'Entrar'}
+            </button>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, color: 'var(--muted)' }}>
+              <span className="hr grow" /><span className="micro">o</span><span className="hr grow" />
+            </div>
+            <Link to="/register" className="btn btn-ghost" style={{ width: '100%', justifyContent: 'center' }}>
+              Crear una cuenta
+            </Link>
+          </div>
         </form>
 
-        {/* Link to register */}
-        <p className="text-center text-sm text-surface-500 font-body">
-          ¿No tienes cuenta?{' '}
-          <Link to="/register" className="text-brand-600 font-semibold hover:underline">
-            Regístrate
-          </Link>
-        </p>
       </div>
-    </main>
+    </div>
   );
 };
 

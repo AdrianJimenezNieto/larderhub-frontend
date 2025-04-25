@@ -5,9 +5,7 @@ import type { User, AuthResponse } from '../types/auth';
 interface AuthState {
   user: User | null;
   token: string | null;
-  // Derived getter
   isAuthenticated: boolean;
-  // Actions
   login: (response: AuthResponse) => void;
   logout: () => void;
 }
@@ -34,7 +32,7 @@ export const useAuthStore = create<AuthState>()(
         }),
     }),
     {
-      name: 'auth-storage', // key in localStorage
+      name: 'auth-storage',
     }
   )
 );

@@ -7,17 +7,11 @@ interface ToastProps {
   onClose: () => void;
 }
 
-const icons: Record<string, string> = {
-  success: '✅',
-  error: '❌',
-  info: 'ℹ️',
-};
-
-const bg: Record<string, string> = {
-  success: 'bg-brand-600',
-  error: 'bg-alert-600',
-  info: 'bg-surface-700',
-};
+const CheckIcon = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M4 12l6 6L20 6"/>
+  </svg>
+);
 
 const Toast = ({ message, type = 'info', duration = 3500, onClose }: ToastProps) => {
   const [visible, setVisible] = useState(true);
@@ -31,11 +25,22 @@ const Toast = ({ message, type = 'info', duration = 3500, onClose }: ToastProps)
     <div
       role="status"
       aria-live="polite"
-      className={`fixed bottom-6 left-1/2 -translate-x-1/2 z-100 flex items-center gap-3 px-5 py-3 rounded-xl text-white font-body text-sm font-semibold shadow-modal transition-all duration-300 ${bg[type]} ${visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-2'}`}
+      className="toast"
+      style={{
+        transition: 'opacity .3s, transform .3s',
+        opacity: visible ? 1 : 0,
+        transform: visible ? 'translateY(0)' : 'translateY(-8px)',
+      }}
     >
-      <span>{icons[type]}</span>
-      <span>{message}</span>
-      <button onClick={() => { setVisible(false); setTimeout(onClose, 300); }} className="ml-2 opacity-70 hover:opacity-100 text-lg leading-none">×</button>
+      {type === 'success' ? <CheckIcon /> : <span className="pulse" />}
+      <span style={{ flex: 1 }}>{message}</span>
+      <button
+        onClick={() => { setVisible(false); setTimeout(onClose, 300); }}
+        style={{
+          background: 'none', border: 0, color: 'inherit', opacity: 0.6,
+          cursor: 'pointer', fontSize: 18, lineHeight: 1, padding: 0, minWidth: 0, minHeight: 0,
+        }}
+      >×</button>
     </div>
   );
 };
