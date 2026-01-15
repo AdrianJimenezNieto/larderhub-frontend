@@ -1,0 +1,57 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Production Build
+dist/
+dist-ssr/
+build/
+
+# Environment Variables & Sensitive Data
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+*.pem
+*.key
+*.cert
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# OS Files
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# IDEs & Editors
+.vscode/*
+!.vscode/extensions.json
+!.vscode/launch.json
+!.vscode/settings.json
+.idea/
+*.suo
+*.ntvs
+*.njsproj
+*.sln
+*.sw?
+
+# AI Agents & Bot Configuration (Requested Exclusion)
+.agent/
+.gemini/
+.cursor/
+.windsurf/
+_artifacts/
+.history/
+
+# Testing coverage
+coverage/
+
+# Vite / Temporary
+*.local
+.eslintcache
