@@ -3,55 +3,57 @@ import { useAuthStore } from '../store/authStore';
 import useInventory from '../features/inventory/useInventory';
 import ProductCard from '../features/inventory/components/ProductCard';
 import ProductModal from '../features/inventory/components/ProductModal';
-import type { Product, CreateProductRequest } from '../types/product';
+import type { PantryItem, CreatePantryItemRequest } from '../types/pantryItem';
 
 const DashboardPage = () => {
   const user = useAuthStore((s) => s.user);
   const logout = useAuthStore((s) => s.logout);
 
-  const { products, loading, error, addProduct, editProduct, removeProduct } = useInventory();
+  const { items, loading, error, addItem, editItem, removeItem } = useInventory();
 
-  // Modal state: null = closed, undefined = add mode, Product = edit mode
-  const [modalProduct, setModalProduct] = useState<Product | null | undefined>(undefined);
-  const isModalOpen = modalProduct !== undefined;
+  // Modal state: undefined = closed, null = add mode, PantryItem = edit mode
+  const [modalItem, setModalItem] = useState<PantryItem | null | undefined>(undefined);
+  const isModalOpen = modalItem !== undefined;
 
-  // Inline action error feedback (shows below header)
+  // Inline error feedback for delete/edit actions
   const [actionError, setActionError] = useState<string | null>(null);
 
   const openAddModal = () => {
-    setModalProduct(null);
+    setModalItem(null);
     setActionError(null);
   };
 
-  const openEditModal = (product: Product) => {
-    setModalProduct(product);
+  const openEditModal = (item: PantryItem) => {
+    setModalItem(item);
     setActionError(null);
   };
 
-  const closeModal = () => setModalProduct(undefined);
+  const closeModal = () => setModalItem(undefined);
 
-  // Called by ProductModal on save (handles both create and update)
-  const handleSave = async (data: CreateProductRequest) => {
-    if (modalProduct) {
-      // Edit mode
-      await editProduct(modalProduct.id, data);
+  // Called by ProductModal on save — routes to addItem or editItem
+  const handleSave = async (data: CreatePantryItemRequest) => {
+    if (modalItem) {
+      // Edit mode: only quantity and expirationDate can change
+      await editItem(modalItem.id, {
+        quantity: data.quantity,
+        expirationDate: data.expirationDate,
+      });
     } else {
-      // Add mode
-      await addProduct(data);
+      // Add mode: full CreatePantryItemRequest
+      await addItem(data);
     }
   };
 
   const handleDelete = async (id: number) => {
-    if (!window.confirm('¿Seguro que quieres eliminar este producto?')) return;
+    if (!window.confirm('¿Seguro que quieres eliminar este producto de tu despensa?')) return;
     try {
-      await removeProduct(id);
+      await removeItem(id);
     } catch (err: unknown) {
       setActionError((err as Error).message);
     }
   };
 
-  // Derived stats
-  const totalProducts = products.length;
+  const totalItems = items.length;
 
   return (
     <div className="min-h-screen bg-surface-50">
@@ -77,13 +79,13 @@ const DashboardPage = () => {
         {/* Page title + action bar */}
         <div className="flex items-center justify-between gap-4">
           <div>
-            <h2 className="text-2xl text-surface-900">Mi inventario</h2>
+            <h2 className="text-2xl text-surface-900">Mi despensa</h2>
             <p className="text-sm text-surface-400 font-body mt-0.5">
-              {totalProducts} {totalProducts === 1 ? 'producto' : 'productos'} en tu despensa
+              {totalItems} {totalItems === 1 ? 'producto' : 'productos'} en tu inventario
             </p>
           </div>
           <button
-            id="add-product-button"
+            id="add-item-button"
             onClick={openAddModal}
             className="shrink-0 bg-brand-600 text-white font-semibold font-body rounded-lg px-5 hover:bg-brand-700 transition-colors flex items-center gap-2"
           >
@@ -102,7 +104,7 @@ const DashboardPage = () => {
         {/* Loading state */}
         {loading && (
           <div className="flex items-center justify-center py-16 text-surface-400 font-body">
-            Cargando inventario…
+            Cargando tu despensa…
           </div>
         )}
 
@@ -114,11 +116,11 @@ const DashboardPage = () => {
         )}
 
         {/* Empty state */}
-        {!loading && !error && products.length === 0 && (
+        {!loading && !error && items.length === 0 && (
           <div className="flex flex-col items-center justify-center py-16 gap-4 text-center">
             <span className="text-6xl">🥫</span>
             <p className="text-surface-500 font-body">
-              Tu despensa está vacía. ¡Empieza añadiendo un producto!
+              Tu despensa está vacía. ¡Empieza añadiendo un producto del catálogo!
             </p>
             <button
               onClick={openAddModal}
@@ -129,16 +131,16 @@ const DashboardPage = () => {
           </div>
         )}
 
-        {/* Product grid */}
-        {!loading && !error && products.length > 0 && (
+        {/* Items grid */}
+        {!loading && !error && items.length > 0 && (
           <section
-            aria-label="Lista de productos"
+            aria-label="Productos en tu despensa"
             className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"
           >
-            {products.map((product) => (
+            {items.map((item) => (
               <ProductCard
-                key={product.id}
-                product={product}
+                key={item.id}
+                item={item}
                 onEdit={openEditModal}
                 onDelete={handleDelete}
               />
@@ -150,7 +152,7 @@ const DashboardPage = () => {
       {/* Add / Edit modal */}
       {isModalOpen && (
         <ProductModal
-          product={modalProduct}
+          item={modalItem}
           onSave={handleSave}
           onClose={closeModal}
         />

@@ -1,9 +1,9 @@
-import type { Product } from '../../../types/product';
+import type { PantryItem } from '../../../types/pantryItem';
 import { isExpiringSoon, isExpired } from '../useInventory';
 
 interface ProductCardProps {
-  product: Product;
-  onEdit: (product: Product) => void;
+  item: PantryItem;
+  onEdit: (item: PantryItem) => void;
   onDelete: (id: number) => void;
 }
 
@@ -13,11 +13,11 @@ const formatDate = (dateStr: string | null): string => {
   return new Date(dateStr).toLocaleDateString('es-ES');
 };
 
-const ProductCard = ({ product, onEdit, onDelete }: ProductCardProps) => {
-  const expiringSoon = isExpiringSoon(product.expirationDate);
-  const expired = isExpired(product.expirationDate);
+const ProductCard = ({ item, onEdit, onDelete }: ProductCardProps) => {
+  const expiringSoon = isExpiringSoon(item.expirationDate);
+  const expired = isExpired(item.expirationDate);
 
-  // Dynamic border color based on expiration status
+  // Dynamic border based on expiration status
   const borderClass = expired
     ? 'border-alert-600'
     : expiringSoon
@@ -28,13 +28,15 @@ const ProductCard = ({ product, onEdit, onDelete }: ProductCardProps) => {
     <article
       className={`bg-white rounded-xl border-2 ${borderClass} p-4 flex flex-col gap-3 shadow-card transition-shadow hover:shadow-modal`}
     >
-      {/* Header: name + expiry badge */}
+      {/* Header: product name + expiry badge */}
       <div className="flex items-start justify-between gap-2">
-        <h3 className="text-surface-900 font-semibold font-body leading-tight line-clamp-2">
-          {product.name}
-        </h3>
+        <div>
+          <h3 className="text-surface-900 font-semibold font-body leading-tight">
+            {item.product.name}
+          </h3>
+          <span className="text-xs text-surface-400 font-body">{item.product.category}</span>
+        </div>
 
-        {/* Expiry status badge */}
         {expired && (
           <span className="shrink-0 text-xs font-semibold bg-alert-100 text-alert-600 px-2 py-0.5 rounded-full">
             Caducado
@@ -52,14 +54,10 @@ const ProductCard = ({ product, onEdit, onDelete }: ProductCardProps) => {
         <div>
           <dt className="text-surface-400 text-xs uppercase tracking-wide">Cantidad</dt>
           <dd className="text-surface-800 font-semibold">
-            {product.quantity} {product.unit}
+            {item.quantity} {item.product.unit}
           </dd>
         </div>
         <div>
-          <dt className="text-surface-400 text-xs uppercase tracking-wide">Categoría</dt>
-          <dd className="text-surface-800 font-semibold truncate">{product.category || '—'}</dd>
-        </div>
-        <div className="col-span-2">
           <dt className="text-surface-400 text-xs uppercase tracking-wide">Caducidad</dt>
           <dd
             className={`font-semibold ${expired
@@ -69,7 +67,7 @@ const ProductCard = ({ product, onEdit, onDelete }: ProductCardProps) => {
                   : 'text-surface-800'
               }`}
           >
-            {formatDate(product.expirationDate)}
+            {formatDate(item.expirationDate)}
           </dd>
         </div>
       </dl>
@@ -77,18 +75,18 @@ const ProductCard = ({ product, onEdit, onDelete }: ProductCardProps) => {
       {/* Action buttons */}
       <div className="flex gap-2 mt-auto pt-2 border-t border-surface-100">
         <button
-          id={`edit-product-${product.id}`}
-          onClick={() => onEdit(product)}
+          id={`edit-item-${item.id}`}
+          onClick={() => onEdit(item)}
           className="flex-1 text-sm font-semibold font-body text-action-500 border border-action-500 rounded-lg hover:bg-action-50 transition-colors"
-          aria-label={`Editar ${product.name}`}
+          aria-label={`Editar ${item.product.name}`}
         >
           Editar
         </button>
         <button
-          id={`delete-product-${product.id}`}
-          onClick={() => onDelete(product.id)}
+          id={`delete-item-${item.id}`}
+          onClick={() => onDelete(item.id)}
           className="flex-1 text-sm font-semibold font-body text-alert-600 border border-alert-600 rounded-lg hover:bg-alert-50 transition-colors"
-          aria-label={`Eliminar ${product.name}`}
+          aria-label={`Eliminar ${item.product.name}`}
         >
           Eliminar
         </button>
