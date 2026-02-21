@@ -3,6 +3,7 @@ import ProtectedRoute from './ProtectedRoute';
 import GuestRoute from './GuestRoute';
 import LandingPage from '../pages/LandingPage';
 import LoginPage from '../pages/auth/LoginPage';
+import DashboardPage from '../pages/DashboardPage';
 import RegisterPage from '../pages/auth/RegisterPage';
 
 export const router = createBrowserRouter([
@@ -33,12 +34,7 @@ export const router = createBrowserRouter([
     children: [
       {
         path: '/dashboard',
-        // Placeholder until the pantry dashboard slice is built
-        element: (
-          <div className="flex items-center justify-center h-screen font-heading text-brand-600 text-2xl">
-            🏠 Dashboard — Slice 2 coming soon
-          </div>
-        ),
+        element: <DashboardPage />,
       },
     ],
   },
