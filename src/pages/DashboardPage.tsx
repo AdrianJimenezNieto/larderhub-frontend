@@ -5,6 +5,8 @@ import { useHouseholdStore } from '../store/householdStore';
 import useInventory from '../features/inventory/useInventory';
 import ProductCard from '../features/inventory/components/ProductCard';
 import ProductModal from '../features/inventory/components/ProductModal';
+import ExpirationAlerts from '../features/inventory/components/ExpirationAlerts';
+import ConfirmModal from '../components/ui/ConfirmModal';
 import type { PantryItem, CreatePantryItemRequest } from '../types/pantryItem';
 
 const DashboardPage = () => {
@@ -18,11 +20,16 @@ const DashboardPage = () => {
   const activeHousehold = getActiveHousehold();
 
   // Inventory scoped to the active household (null = skip fetching)
-  const { items, loading, error, addItem, editItem, removeItem } = useInventory(activeHouseholdId);
+  const { items, expiredItems, expiringItems, loading, error, addItem, editItem, removeItem } =
+    useInventory(activeHouseholdId);
 
   // Modal state: undefined = closed, null = add mode, PantryItem = edit mode
   const [modalItem, setModalItem] = useState<PantryItem | null | undefined>(undefined);
   const isModalOpen = modalItem !== undefined;
+
+  // Delete confirm state
+  const [itemToDelete, setItemToDelete] = useState<number | null>(null);
+
   const [actionError, setActionError] = useState<string | null>(null);
 
   const openAddModal = () => { setModalItem(null); setActionError(null); };
@@ -37,12 +44,18 @@ const DashboardPage = () => {
     }
   };
 
-  const handleDelete = async (id: number) => {
-    if (!window.confirm('¿Seguro que quieres eliminar este producto de tu despensa?')) return;
+  const handleDeleteRequest = (id: number) => {
+    setItemToDelete(id);
+  };
+
+  const confirmDelete = async () => {
+    if (itemToDelete === null) return;
     try {
-      await removeItem(id);
+      await removeItem(itemToDelete);
     } catch (err: unknown) {
       setActionError((err as Error).message);
+    } finally {
+      setItemToDelete(null);
     }
   };
 
@@ -112,6 +125,15 @@ const DashboardPage = () => {
           </div>
         )}
 
+        {/* === Expiration Alerts === */}
+        {activeHouseholdId && !loading && !error && (
+          <ExpirationAlerts
+            expiredItems={expiredItems}
+            expiringItems={expiringItems}
+            onRemove={handleDeleteRequest}
+          />
+        )}
+
         {/* Page title + action bar */}
         <div className="flex items-center justify-between gap-4">
           <div>
@@ -169,16 +191,25 @@ const DashboardPage = () => {
         {!loading && !error && items.length > 0 && (
           <section aria-label="Productos en tu despensa" className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {items.map((item) => (
-              <ProductCard key={item.id} item={item} onEdit={openEditModal} onDelete={handleDelete} />
+              <ProductCard key={item.id} item={item} onEdit={openEditModal} onDelete={handleDeleteRequest} />
             ))}
           </section>
         )}
       </main>
 
-      {/* Modal */}
+      {/* Modals */}
       {isModalOpen && (
         <ProductModal item={modalItem} onSave={handleSave} onClose={closeModal} />
       )}
+
+      <ConfirmModal
+        isOpen={itemToDelete !== null}
+        title="Eliminar producto"
+        message="¿Seguro que quieres eliminar este producto de tu despensa? Esta acción es irreversible."
+        confirmText="Eliminar"
+        onConfirm={confirmDelete}
+        onCancel={() => setItemToDelete(null)}
+      />
     </div>
   );
 };

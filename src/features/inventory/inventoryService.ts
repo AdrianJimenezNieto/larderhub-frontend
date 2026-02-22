@@ -9,6 +9,16 @@ const base = (householdId: number) =>
 export const getPantryItems = (householdId: number): Promise<PantryItem[]> =>
   apiClient.get<PantryItem[]>(base(householdId)).then((r) => r.data);
 
+// GET /api/v1/households/{householdId}/inventory/expired
+export const getExpiredItems = (householdId: number): Promise<PantryItem[]> =>
+  apiClient.get<PantryItem[]>(`${base(householdId)}/expired`).then((r) => r.data);
+
+// GET /api/v1/households/{householdId}/inventory/expiring?daysAhead=7
+export const getExpiringItems = (householdId: number, daysAhead = 7): Promise<PantryItem[]> =>
+  apiClient
+    .get<PantryItem[]>(`${base(householdId)}/expiring`, { params: { daysAhead } })
+    .then((r) => r.data);
+
 // POST /api/v1/households/{householdId}/inventory
 export const createPantryItem = (
   householdId: number,
@@ -27,3 +37,4 @@ export const updatePantryItem = (
 // DELETE /api/v1/households/{householdId}/inventory/{itemId}
 export const deletePantryItem = (householdId: number, itemId: number): Promise<void> =>
   apiClient.delete(`${base(householdId)}/${itemId}`).then(() => undefined);
+
