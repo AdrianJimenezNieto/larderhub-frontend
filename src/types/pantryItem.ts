@@ -1,9 +1,11 @@
-import type { CatalogProduct } from './catalogProduct';
-
-// A PantryItem is a product from the catalog added to the user's pantry
+// PantryItem — flat structure matching the backend InventoryItemResponseDTO
 export interface PantryItem {
   id: number;
-  product: CatalogProduct; // embedded catalog product returned by the backend
+  productId: number;
+  productName: string | null;
+  productBarcode: string | null;
+  productImageUrl: string | null;
+  standardUnit: string | null;
   quantity: number;
   expirationDate: string | null; // ISO-8601 date (YYYY-MM-DD)
 }

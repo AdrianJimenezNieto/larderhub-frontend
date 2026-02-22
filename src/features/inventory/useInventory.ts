@@ -6,21 +6,16 @@ interface UseInventoryReturn {
   items: PantryItem[];
   loading: boolean;
   error: string | null;
-  // CRUD actions
   addItem: (data: CreatePantryItemRequest) => Promise<void>;
-  editItem: (id: number, data: UpdatePantryItemRequest) => Promise<void>;
-  removeItem: (id: number) => Promise<void>;
-  // Manual refetch
+  editItem: (itemId: number, data: UpdatePantryItemRequest) => Promise<void>;
+  removeItem: (itemId: number) => Promise<void>;
   refetch: () => Promise<void>;
 }
 
 // Helper: returns true if the expiration date is within the next `days` days
 export const isExpiringSoon = (dateStr: string | null, days = 3): boolean => {
   if (!dateStr) return false;
-  const expiration = new Date(dateStr);
-  const now = new Date();
-  const diffMs = expiration.getTime() - now.getTime();
-  const diffDays = diffMs / (1000 * 60 * 60 * 24);
+  const diffDays = (new Date(dateStr).getTime() - Date.now()) / (1000 * 60 * 60 * 24);
   return diffDays >= 0 && diffDays <= days;
 };
 
@@ -30,77 +25,70 @@ export const isExpired = (dateStr: string | null): boolean => {
   return new Date(dateStr) < new Date();
 };
 
-const useInventory = (): UseInventoryReturn => {
+// householdId: active household — pass null to disable all fetching
+const useInventory = (householdId: number | null): UseInventoryReturn => {
   const [items, setItems] = useState<PantryItem[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
+  const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
 
-  // --- Fetch all pantry items from the backend ---
   const fetchItems = useCallback(async () => {
+    if (householdId === null) {
+      setItems([]);
+      return;
+    }
     setLoading(true);
     setError(null);
     try {
-      const data = await inventoryService.getPantryItems();
+      const data = await inventoryService.getPantryItems(householdId);
       setItems(data);
     } catch {
       setError('No se pudo cargar el inventario. Comprueba tu conexión.');
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [householdId]);
 
+  // Re-fetch whenever the active household changes
   useEffect(() => {
     void fetchItems();
   }, [fetchItems]);
 
-  // --- CREATE: append server response (avoids fake temp IDs) ---
   const addItem = async (data: CreatePantryItemRequest): Promise<void> => {
+    if (!householdId) return;
     try {
-      const created = await inventoryService.createPantryItem(data);
+      const created = await inventoryService.createPantryItem(householdId, data);
       setItems((prev) => [...prev, created]);
     } catch {
       throw new Error('No se pudo añadir el producto. Inténtalo de nuevo.');
     }
   };
 
-  // --- UPDATE (optimistic: update locally, rollback on error) ---
-  const editItem = async (id: number, data: UpdatePantryItemRequest): Promise<void> => {
+  const editItem = async (itemId: number, data: UpdatePantryItemRequest): Promise<void> => {
+    if (!householdId) return;
     const previous = items;
-    // Optimistic: merge only the editable fields (quantity + expirationDate)
-    setItems((prev) =>
-      prev.map((item) => (item.id === id ? { ...item, ...data } : item))
-    );
+    setItems((prev) => prev.map((i) => (i.id === itemId ? { ...i, ...data } : i)));
     try {
-      const updated = await inventoryService.updatePantryItem(id, data);
-      // Sync with server response to stay consistent
-      setItems((prev) => prev.map((item) => (item.id === id ? updated : item)));
+      const updated = await inventoryService.updatePantryItem(householdId, itemId, data);
+      setItems((prev) => prev.map((i) => (i.id === itemId ? updated : i)));
     } catch {
       setItems(previous);
       throw new Error('No se pudo actualizar el producto. Inténtalo de nuevo.');
     }
   };
 
-  // --- DELETE (optimistic: remove locally, rollback on error) ---
-  const removeItem = async (id: number): Promise<void> => {
+  const removeItem = async (itemId: number): Promise<void> => {
+    if (!householdId) return;
     const previous = items;
-    setItems((prev) => prev.filter((item) => item.id !== id));
+    setItems((prev) => prev.filter((i) => i.id !== itemId));
     try {
-      await inventoryService.deletePantryItem(id);
+      await inventoryService.deletePantryItem(householdId, itemId);
     } catch {
       setItems(previous);
       throw new Error('No se pudo eliminar el producto. Inténtalo de nuevo.');
     }
   };
 
-  return {
-    items,
-    loading,
-    error,
-    addItem,
-    editItem,
-    removeItem,
-    refetch: fetchItems,
-  };
+  return { items, loading, error, addItem, editItem, removeItem, refetch: fetchItems };
 };
 
 export default useInventory;

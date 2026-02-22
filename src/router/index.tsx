@@ -5,6 +5,7 @@ import LandingPage from '../pages/LandingPage';
 import LoginPage from '../pages/auth/LoginPage';
 import DashboardPage from '../pages/DashboardPage';
 import RegisterPage from '../pages/auth/RegisterPage';
+import HouseholdsPage from '../pages/HouseholdsPage';
 
 export const router = createBrowserRouter([
   // --- Public routes (always accessible) ---
@@ -36,6 +37,11 @@ export const router = createBrowserRouter([
         path: '/dashboard',
         element: <DashboardPage />,
       },
+      {
+        path: '/households',
+        element: <HouseholdsPage />,
+      },
     ],
   },
 ]);
+
