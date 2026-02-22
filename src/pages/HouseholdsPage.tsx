@@ -140,8 +140,8 @@ const HouseholdsPage = () => {
                       </p>
                     </div>
                     <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${h.myRole === 'ADMIN'
-                        ? 'bg-brand-100 text-brand-700'
-                        : 'bg-surface-200 text-surface-600'
+                      ? 'bg-brand-100 text-brand-700'
+                      : 'bg-surface-200 text-surface-600'
                       }`}>
                       {h.myRole === 'ADMIN' ? 'Admin' : 'Miembro'}
                     </span>
@@ -191,6 +191,7 @@ const HouseholdsPage = () => {
         <HouseholdMembersModal
           householdId={membersHousehold.id}
           householdName={membersHousehold.name}
+          myRole={membersHousehold.myRole}
           onClose={() => setMembersHousehold(null)}
         />
       )}
