@@ -61,12 +61,23 @@ const DashboardPage = () => {
             title="Gestionar hogares"
           >
             <span className="text-base">🏠</span>
-            <span className="text-surface-700 font-semibold truncate">
+            <span className="text-surface-700 font-semibold truncate hidden sm:block">
               {activeHousehold?.name ?? 'Sin hogar activo'}
             </span>
             {activeHousehold?.myRole === 'ADMIN' && (
               <span className="shrink-0 text-xs bg-brand-100 text-brand-700 font-semibold px-1.5 rounded-full">Admin</span>
             )}
+          </button>
+
+          {/* Shopping list link */}
+          <button
+            id="shopping-list-nav-button"
+            onClick={() => navigate('/shopping-list')}
+            className="flex items-center gap-1.5 text-sm font-body border border-surface-200 rounded-lg px-3 py-1.5 hover:bg-surface-100 transition-colors shrink-0"
+            title="Lista de la compra"
+          >
+            <span className="text-base">🛒</span>
+            <span className="text-surface-700 font-semibold hidden sm:block">Lista</span>
           </button>
 
           <span className="text-sm text-surface-500 font-body hidden sm:block">{user?.name}</span>
