@@ -14,34 +14,31 @@ interface PantryItemModalProps {
 const PantryItemModal = ({ item, onSave, onClose }: PantryItemModalProps) => {
   const isEditing = !!item;
 
-  // Catalog state
+  // Catalog state (for the add-mode dropdown)
   const [catalog, setCatalog] = useState<CatalogProduct[]>([]);
   const [catalogLoading, setCatalogLoading] = useState(false);
   const [catalogError, setCatalogError] = useState(false);
 
-  // Form state
-  const [productId, setProductId] = useState<number | ''>(item?.product.id ?? '');
+  // Form state — productId uses the flat pantryItem.productId
+  const [productId, setProductId] = useState<number | ''>(item?.productId ?? '');
   const [quantity, setQuantity] = useState<number>(item?.quantity ?? 1);
   const [expirationDate, setExpirationDate] = useState<string>(item?.expirationDate ?? '');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
-  // Fetch catalog on mount (only needed when adding, but harmless when editing)
+  // Fetch catalog on mount
   useEffect(() => {
     setCatalogLoading(true);
     getCatalogProducts()
-      .then((data) => {
-        setCatalog(data);
-        setCatalogError(false);
-      })
+      .then((data) => { setCatalog(data); setCatalogError(false); })
       .catch(() => setCatalogError(true))
       .finally(() => setCatalogLoading(false));
   }, []);
 
-  // Populate form fields when editing
+  // Populate form when editing
   useEffect(() => {
     if (item) {
-      setProductId(item.product.id);
+      setProductId(item.productId);
       setQuantity(item.quantity);
       setExpirationDate(item.expirationDate ?? '');
     }
@@ -50,23 +47,11 @@ const PantryItemModal = ({ item, onSave, onClose }: PantryItemModalProps) => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
-
-    if (!isEditing && productId === '') {
-      setError('Selecciona un producto del catálogo.');
-      return;
-    }
-    if (quantity <= 0) {
-      setError('La cantidad debe ser mayor que 0.');
-      return;
-    }
-
+    if (!isEditing && productId === '') { setError('Selecciona un producto del catálogo.'); return; }
+    if (quantity <= 0) { setError('La cantidad debe ser mayor que 0.'); return; }
     setLoading(true);
     try {
-      await onSave({
-        productId: productId as number,
-        quantity,
-        expirationDate: expirationDate || null,
-      });
+      await onSave({ productId: productId as number, quantity, expirationDate: expirationDate || null });
       onClose();
     } catch (err: unknown) {
       setError((err as Error).message ?? 'Error al guardar.');
@@ -79,8 +64,9 @@ const PantryItemModal = ({ item, onSave, onClose }: PantryItemModalProps) => {
     if (e.target === e.currentTarget) onClose();
   };
 
-  // Find the selected product to show its unit
-  const selectedProduct = catalog.find((p) => p.id === productId) ?? item?.product;
+  // Find selected catalog product to show its unit next to the quantity field
+  const selectedCatalogProduct = catalog.find((p) => p.id === productId);
+  const unitHint = isEditing ? item?.standardUnit : selectedCatalogProduct?.standardUnit;
 
   return (
     <div
@@ -96,16 +82,10 @@ const PantryItemModal = ({ item, onSave, onClose }: PantryItemModalProps) => {
           <h2 id="pantry-modal-title" className="text-xl text-surface-900 font-heading">
             {isEditing ? 'Editar cantidad / caducidad' : 'Añadir a la despensa'}
           </h2>
-          <button
-            onClick={onClose}
-            className="text-surface-400 hover:text-surface-700 text-2xl leading-none"
-            aria-label="Cerrar modal"
-          >
-            ×
-          </button>
+          <button onClick={onClose} className="text-surface-400 hover:text-surface-700 text-2xl leading-none" aria-label="Cerrar modal">×</button>
         </div>
 
-        {/* Error */}
+        {/* Error alert */}
         {error && (
           <div role="alert" className="text-sm text-alert-600 bg-alert-50 border border-alert-200 rounded-lg px-4 py-2 font-body">
             {error}
@@ -114,22 +94,19 @@ const PantryItemModal = ({ item, onSave, onClose }: PantryItemModalProps) => {
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-4" noValidate>
 
-          {/* Product selector — disabled in edit mode (productId cannot change) */}
+          {/* Product selector */}
           <div className="flex flex-col gap-1">
             <label htmlFor="pantry-product" className="text-sm font-semibold text-surface-700 font-body">
               Producto <span className="text-alert-600">*</span>
             </label>
 
             {isEditing ? (
-              // Read-only in edit mode: the product itself cannot change
+              // Read-only in edit mode — product cannot be swapped
               <div className="border border-surface-200 bg-surface-100 rounded-lg px-3 py-2 font-body text-surface-700">
-                {item?.product.name}{' '}
-                <span className="text-surface-400 text-sm">({item?.product.category})</span>
+                {item?.productName ?? 'Producto desconocido'}
               </div>
             ) : catalogError ? (
-              <p className="text-sm text-alert-600 font-body">
-                No se pudo cargar el catálogo. Recarga la página.
-              </p>
+              <p className="text-sm text-alert-600 font-body">No se pudo cargar el catálogo. Recarga la página.</p>
             ) : (
               <CatalogSearchInput
                 catalog={catalog}
@@ -140,13 +117,11 @@ const PantryItemModal = ({ item, onSave, onClose }: PantryItemModalProps) => {
             )}
           </div>
 
-          {/* Quantity + unit hint */}
+          {/* Quantity */}
           <div className="flex flex-col gap-1">
             <label htmlFor="pantry-quantity" className="text-sm font-semibold text-surface-700 font-body">
               Cantidad <span className="text-alert-600">*</span>
-              {selectedProduct && (
-                <span className="ml-2 text-surface-400 font-normal">({selectedProduct.unit})</span>
-              )}
+              {unitHint && <span className="ml-2 text-surface-400 font-normal">({unitHint})</span>}
             </label>
             <input
               id="pantry-quantity"
@@ -176,19 +151,13 @@ const PantryItemModal = ({ item, onSave, onClose }: PantryItemModalProps) => {
 
           {/* Actions */}
           <div className="flex gap-3 pt-2">
-            <button
-              type="button"
-              onClick={onClose}
-              className="flex-1 border border-surface-300 text-surface-600 font-semibold font-body rounded-lg hover:bg-surface-100 transition-colors"
-            >
+            <button type="button" onClick={onClose}
+              className="flex-1 border border-surface-300 text-surface-600 font-semibold font-body rounded-lg hover:bg-surface-100 transition-colors">
               Cancelar
             </button>
-            <button
-              id="pantry-modal-save"
-              type="submit"
+            <button id="pantry-modal-save" type="submit"
               disabled={loading || (!isEditing && catalogLoading)}
-              className="flex-1 bg-brand-600 text-white font-semibold font-body rounded-lg hover:bg-brand-700 disabled:opacity-50 transition-colors"
-            >
+              className="flex-1 bg-brand-600 text-white font-semibold font-body rounded-lg hover:bg-brand-700 disabled:opacity-50 transition-colors">
               {loading ? 'Guardando…' : isEditing ? 'Guardar cambios' : 'Añadir'}
             </button>
           </div>
