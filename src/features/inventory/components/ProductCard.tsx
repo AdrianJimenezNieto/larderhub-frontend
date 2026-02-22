@@ -17,9 +17,9 @@ const ProductCard = ({ item, onEdit, onDelete }: ProductCardProps) => {
   const expired = isExpired(item.expirationDate);
 
   const borderClass = expired
-    ? 'border-alert-600'
+    ? 'border-alert-600 shadow-alert-100'
     : expiringSoon
-      ? 'border-action-500'
+      ? 'border-amber-400 shadow-amber-50'
       : 'border-surface-200';
 
   return (
@@ -30,10 +30,10 @@ const ProductCard = ({ item, onEdit, onDelete }: ProductCardProps) => {
           {item.productName ?? 'Producto sin nombre'}
         </h3>
         {expired && (
-          <span className="shrink-0 text-xs font-semibold bg-alert-100 text-alert-600 px-2 py-0.5 rounded-full">Caducado</span>
+          <span className="shrink-0 text-xs font-semibold bg-alert-100 text-alert-700 px-2 py-0.5 rounded-full">Caducado</span>
         )}
         {!expired && expiringSoon && (
-          <span className="shrink-0 text-xs font-semibold bg-action-100 text-action-600 px-2 py-0.5 rounded-full">Caduca pronto</span>
+          <span className="shrink-0 text-xs font-semibold bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full">Caduca pronto</span>
         )}
       </div>
 
@@ -47,7 +47,7 @@ const ProductCard = ({ item, onEdit, onDelete }: ProductCardProps) => {
         </div>
         <div>
           <dt className="text-surface-400 text-xs uppercase tracking-wide">Caducidad</dt>
-          <dd className={`font-semibold ${expired ? 'text-alert-600' : expiringSoon ? 'text-action-600' : 'text-surface-800'}`}>
+          <dd className={`font-semibold ${expired ? 'text-alert-600' : expiringSoon ? 'text-amber-600' : 'text-surface-800'}`}>
             {formatDate(item.expirationDate)}
           </dd>
         </div>
