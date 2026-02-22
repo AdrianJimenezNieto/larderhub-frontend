@@ -1,8 +1,10 @@
-// Catalog product — represents an item in the global product catalog
+// Catalog product — matches ProductResponseDTO from the backend
 export interface CatalogProduct {
   id: number;
   name: string | null;         // backend may return null for some catalog entries
-  standardUnit: string | null; // e.g. "gramos", "litros", "ud"
   category: string | null;
+  barcode: string | null;
+  imageUrl: string | null;
+  standardUnit: string | null; // e.g. "gramos", "litros", "ud"
 }
 

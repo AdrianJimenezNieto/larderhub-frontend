@@ -24,3 +24,15 @@ export interface CreateHouseholdRequest {
 export interface JoinHouseholdRequest {
   joinCode: string;
 }
+
+// Slice 5 — member management
+export interface UserSearchResult {
+  id: number;
+  username: string;
+  email: string;
+  alreadyMember: boolean;
+}
+
+export interface InviteMemberRequest {
+  query: string; // username or email
+}
