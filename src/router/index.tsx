@@ -6,26 +6,18 @@ import LoginPage from '../pages/auth/LoginPage';
 import DashboardPage from '../pages/DashboardPage';
 import RegisterPage from '../pages/auth/RegisterPage';
 import HouseholdsPage from '../pages/HouseholdsPage';
+import ShoppingListPage from '../pages/ShoppingListPage';
 
 export const router = createBrowserRouter([
-  // --- Public routes (always accessible) ---
-  {
-    path: '/',
-    element: <LandingPage />,
-  },
+  // --- Public routes ---
+  { path: '/', element: <LandingPage /> },
 
-  // --- Guest-only routes (redirect to /dashboard if already authenticated) ---
+  // --- Guest-only routes ---
   {
     element: <GuestRoute />,
     children: [
-      {
-        path: '/login',
-        element: <LoginPage />,
-      },
-      {
-        path: '/register',
-        element: <RegisterPage />,
-      },
+      { path: '/login', element: <LoginPage /> },
+      { path: '/register', element: <RegisterPage /> },
     ],
   },
 
@@ -33,15 +25,11 @@ export const router = createBrowserRouter([
   {
     element: <ProtectedRoute />,
     children: [
-      {
-        path: '/dashboard',
-        element: <DashboardPage />,
-      },
-      {
-        path: '/households',
-        element: <HouseholdsPage />,
-      },
+      { path: '/dashboard', element: <DashboardPage /> },
+      { path: '/households', element: <HouseholdsPage /> },
+      { path: '/shopping-list', element: <ShoppingListPage /> },
     ],
   },
 ]);
+
 
