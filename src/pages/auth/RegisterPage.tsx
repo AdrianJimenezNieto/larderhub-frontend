@@ -14,7 +14,7 @@ const RegisterPage = () => {
   const navigate = useNavigate();
   const loginStore = useAuthStore((s) => s.login);
 
-  const [form, setForm] = useState({ name: '', email: '', password: '', confirmPassword: '' });
+  const [form, setForm] = useState({ username: '', email: '', password: '', confirmPassword: '' });
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -30,8 +30,8 @@ const RegisterPage = () => {
     if (form.password.length < 8) { setError('La contraseña debe tener al menos 8 caracteres.'); return; }
     setLoading(true);
     try {
-      const { name, email, password } = form;
-      const response = await registerService({ name, email, password });
+      const { username, email, password } = form;
+      const response = await registerService({ username, email, password });
       loginStore(response);
       navigate('/dashboard', { replace: true });
     } catch (err: unknown) {
@@ -77,9 +77,9 @@ const RegisterPage = () => {
 
             <div className="col gap-6">
               <label className="micro" htmlFor="reg-name">Nombre</label>
-              <input id="reg-name" className="input" type="text" name="name"
-                autoComplete="given-name" required
-                value={form.name} onChange={handleChange} placeholder="Tu nombre" />
+              <input id="reg-name" className="input" type="text" name="username"
+                autoComplete="username" required
+                value={form.username} onChange={handleChange} placeholder="Tu nombre" />
             </div>
 
             <div className="col gap-6">
