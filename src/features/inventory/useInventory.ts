@@ -15,15 +15,32 @@ interface UseInventoryReturn {
 }
 
 // helpers para la UI sin esperar a la API
-export const isExpiringSoon = (dateStr: string | null, days = 7): boolean => {
-  if (!dateStr) return false;
-  const diffDays = (new Date(dateStr).getTime() - Date.now()) / (1000 * 60 * 60 * 24);
-  return diffDays >= 0 && diffDays <= days;
+
+const parseLocalDate = (dateStr: string): Date | null => {
+  const match = /^(\d{4})-(\d{2})-(\d{2})/.exec(dateStr);
+  if (!match) return null;
+  return new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3]));
+};
+
+const todayMidnight = (): Date => {
+  const t = new Date();
+  t.setHours(0, 0, 0, 0);
+  return t;
 };
 
 export const isExpired = (dateStr: string | null): boolean => {
   if (!dateStr) return false;
-  return new Date(dateStr) < new Date();
+  const d = parseLocalDate(dateStr);
+  if (!d) return false;
+  return d.getTime() < todayMidnight().getTime();
+};
+
+export const isExpiringSoon = (dateStr: string | null, days = 7): boolean => {
+  if (!dateStr) return false;
+  const d = parseLocalDate(dateStr);
+  if (!d) return false;
+  const diffDays = Math.round((d.getTime() - todayMidnight().getTime()) / 86400000);
+  return diffDays >= 0 && diffDays <= days;
 };
 
 const useInventory = (householdId: number | null): UseInventoryReturn => {
