@@ -80,16 +80,19 @@ export function useRecipes() {
   }, [fetchRecipes]);
 
   const update = useCallback(async (id: number, data: RecipePayload) => {
-    const previous = allRecipes;
-    setAllRecipes(prev => prev.map(r => r.id === id ? {
-      ...r,
-      title: data.title,
-      description: data.description ?? r.description,
-      imageUrl: data.imageUrl ?? r.imageUrl,
-      difficulty: data.difficulty ?? r.difficulty,
-      cookingTimeMinutes: data.cookingTimeMinutes ?? r.cookingTimeMinutes,
-      servings: data.servings ?? r.servings,
-    } : r));
+    let previous: Recipe[] = [];
+    setAllRecipes(prev => {
+      previous = prev;
+      return prev.map(r => r.id === id ? {
+        ...r,
+        title: data.title,
+        description: data.description ?? r.description,
+        imageUrl: data.imageUrl ?? r.imageUrl,
+        difficulty: data.difficulty ?? r.difficulty,
+        cookingTimeMinutes: data.cookingTimeMinutes ?? r.cookingTimeMinutes,
+        servings: data.servings ?? r.servings,
+      } : r);
+    });
     try {
       await apiUpdate(id, data);
       await fetchRecipes();
@@ -97,7 +100,7 @@ export function useRecipes() {
       setAllRecipes(previous);
       throw new Error('No se pudo actualizar la receta.');
     }
-  }, [allRecipes, fetchRecipes]);
+  }, [fetchRecipes]);
 
   const rate = useCallback(async (id: number, rating: number): Promise<void> => {
     await apiRate(id, rating);
