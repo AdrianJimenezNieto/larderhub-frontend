@@ -56,11 +56,8 @@ coverage/
 *.local
 .eslintcache
 
-API_REFERENCE.md
-slices-plan.md
-GUÍA_PROYECTO.md
-6_Desarrollo_e_Implementacion.md
-PROJECT_SUMMARY.mdCLAUDE.md
+*.md
+!README.md
 GUÍA PROYECTO.pdf
 larderhub-design/
 .claude/
